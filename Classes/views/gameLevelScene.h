@@ -149,11 +149,11 @@ protected:
     //void goGameLevel(int level);
     
     virtual void initMapLyr();
-    virtual void initRollLyr();
+    virtual void initUI();
     virtual void initEnemyLyr();
     virtual void initPieceLyr();
     
-    void initGameElementPositon();
+    void initGameElementCoordinate();
     
     
 protected:
@@ -173,11 +173,50 @@ protected:
     CCLayer *pieceLyr;
     
     int     m_level;  // locate certain level
+    int     m_cellNum;
     
     CCSpriteBatchNode *m_pSptBtNode;
     
+    float leftStart;
+    float topStart;
+    
+    
+    int MAP_TAG_BASE;  // 0
+    int ROLL_TAG_BASE; // 1
+    int ENEMY_TAG_BASE;// 2
+    int PIECE_TAG_BASE;// 3
+    
+public:
+    //顶部不可覆盖区域高度
+	static int TOP_HEIGHT       ;
+    
+	//底部不可覆盖区域高度
+	static int BOTTOM_HEIGHT    ;
+    
+	//六边形边长
+	static int CELL_LENGTH      ;
+    
+	//
+	static int CELL_WIDTH       ;
+	static int CELL_HEIGHT      ;
+    
+	static int CELL_TOUCH_LENGTH;
+
+
+    
     
 };
+
+
+template <typename type1, typename type2>
+typename std::multimap<type1, type2>::iterator operator+(typename std::multimap<type1, type2>::iterator &it, int i)
+{
+    for (int k = 0; k < i; k++) {
+        it++;
+    }
+    
+    return (it);
+}
 
 
 
@@ -233,3 +272,5 @@ protected:
  };
  
  */
+
+

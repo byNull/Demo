@@ -108,7 +108,7 @@ void initGameElementCoord()
     lineSignBg.push_back(CCRect(1641, 1272, 94, 94));
     lineSignBg.push_back(CCRect(1737, 1272, 94, 94));
     lineSignBg.push_back(CCRect(1833, 1272, 94, 94));
-//
+/*
 //    var lineSignF = [ //4,1,2,3,5,6
 //                     {
 //                     2: [cc.rect(1583, 1683, 46, 92), cc.rect(191,1301, 97, 83)],
@@ -132,7 +132,7 @@ void initGameElementCoord()
 //                     4: [cc.rect(1000,1629, 70, 91), cc.rect(1283,1334, 88, 90)]
 //                     },
 //                     ];
-    
+*/
     // rowArr: up-->1, down-->4, right_up-->2, right_down-->3, left_up-->5, left_down-->6
     // std::map<int, CCRect> arrowImg;
     arrowImg.insert(std::pair<int, CCRect>(1, CCRect(262,  1037, 23, 14)));
@@ -330,7 +330,9 @@ void GameLevelJsonStruct::releaseLevelConfig(int lev)
 
 
 /////////////////////////////////////////////
+//
 // Class: GameLevelScene
+//
 /////////////////////////////////////////////
 
 // static variable init
@@ -350,13 +352,22 @@ int GameLevelScene::CELL_HEIGHT       = 96;
 int GameLevelScene::CELL_TOUCH_LENGTH = 45;
 
 
-GameLevelScene::GameLevelScene(int lev) : m_level(lev), m_cellNum(0)
+GameLevelScene::GameLevelScene(int lev) : m_level(lev), m_cellNum(0), m_preColor(-1), m_curPoints(0)
 {
     // set tag base
     MAP_TAG_BASE   = 0;
     ROLL_TAG_BASE  = 1;
     ENEMY_TAG_BASE = 2;
     PIECE_TAG_BASE = 3;
+    LINE_BG_TAG_BASE  = 4;
+    LINE_TOP_TAG_BASE = 5;
+    
+    m_GridPos.clear();
+    m_lines.clear();
+    m_piecesData.clear();
+    m_rollsData.clear();
+    
+    m_pSptBtNode = NULL;
     
     if(!init()){
         //CCLog("GameLevelScene: function -- %s failured\n", );
@@ -365,8 +376,15 @@ GameLevelScene::GameLevelScene(int lev) : m_level(lev), m_cellNum(0)
     }
 }
 
-GameLevelScene::~GameLevelScene(){
+GameLevelScene::~GameLevelScene()
+{
+    m_preColor  = -1;
+    m_curPoints = 0;
     
+    m_GridPos.clear();
+    m_lines.clear();
+    m_piecesData.clear();
+    m_rollsData.clear();
 }
 
 void GameLevelScene::initConfigWithGameLevel(int lev)
@@ -434,23 +452,6 @@ bool GameLevelScene::init()
     
 }
 
-/*
-
-void GameLevelScene::initMapLyr()
-{
-    mapLyr = CCLayer::create();
-    
-//    int elemNum = s_pGls->horizontalNum * s_pGls->verticalNum;
-//    int initTag = elemNum * 0;
-//    int rollX =
-//    
-//    for (int i = 0; i < s_pGls->) {
-//        <#statements#>
-//    }    
-}
- 
- */
-
 ////////////////////////////////////////////////
 // initRollLyr --> initUI
 ////////////////////////////////////////////////
@@ -514,7 +515,7 @@ void GameLevelScene::initUI()
             // 创建石头精灵
             CCSprite *pRollSpt = CCSprite::createWithTexture(pSptBatch->getTexture(), rtRoll);
             //            CCSprite *pRollSpt = CCSprite::create("game_parts.png", rtRoll);
-            pRollSpt->setTag(initTag + elemNum * ROLL_TAG_BASE);
+            pRollSpt->setTag(pos + elemNum * ROLL_TAG_BASE);
             pRollSpt->setPosition(ccp(xPos, yPos));
             
             // 创建障碍精灵
@@ -522,14 +523,14 @@ void GameLevelScene::initUI()
             if (valueOfEnemyPos != 0){
                 pEnemySpt= CCSprite::createWithTexture(pSptBatch->getTexture(), rtEnemy);
                 //                pEnemySpt = CCSprite::create("game_parts.png", rtEnemy);
-                pEnemySpt->setTag(initTag + elemNum * ENEMY_TAG_BASE);
+                pEnemySpt->setTag(pos + elemNum * ENEMY_TAG_BASE);
                 pEnemySpt->setPosition(ccp(xPos, yPos));
             }
             
             // 创建钱币精灵
             CCSprite *pPieceSpt = CCSprite::createWithTexture(pSptBatch->getTexture(), rtPiece);
             //            CCSprite *pPieceSpt = CCSprite::create("game_parts.png", rtPiece);
-            pPieceSpt->setTag(initTag + elemNum * PIECE_TAG_BASE);
+            pPieceSpt->setTag(pos + elemNum * PIECE_TAG_BASE);
             pPieceSpt->setPosition(ccp(xPos, yPos));
             
             // 将精灵添加到游戏场景中
@@ -551,6 +552,7 @@ void GameLevelScene::initUI()
                 pPieceSpt->setVisible(false);
             }
             
+            /*
             // 调试
             //this->addChild(pRollSpt, 200);
             //            CCLog("valueOfRollPos  = %d", valueOfRollPos );
@@ -561,32 +563,33 @@ void GameLevelScene::initUI()
             //            CCLog("valueOfRollPos  = (%f, %f, %f, %f)",   rtRoll.origin.x, rtRoll.origin.y, rtRoll.size.width, rtRoll.size.height);
             //            CCLog("valueOfEnemyPos = (%f, %f, %f, %f)",   rtEnemy.origin.x, rtEnemy.origin.y, rtEnemy.size.width, rtEnemy.size.height);
             //            CCLog("valueOfPiecePos = (%f, %f, %f, %f)\n", rtPiece.origin.x, rtPiece.origin.y, rtPiece.size.width, rtPiece.size.height);
+            */
             
-            initTag++;
+            initTag++; // initTag = pos
+            
+            // put <posIndex, PointPos> into m_GridPos
+            m_GridPos.insert(std::pair<int, CCPoint>(pos, CCPoint(xPos, yPos)));
+            
+            PieceDataOfGrid coinObj;
+            coinObj.index      = pos;
+            coinObj.colorType  = rdVal;
+            coinObj.valueOfPos = valueOfPiecePos;
+            coinObj.pt         = CCPoint(xPos, yPos);
+            coinObj.rt         = rtPiece;
+            m_piecesData.push_back(coinObj);
+            
+            
+            RollDataOfGrid rollCellObj;
+            rollCellObj.index = pos;
+            rollCellObj.type  = (enum RollType)valueOfRollPos;
+            rollCellObj.pt    = CCPoint(xPos, yPos);
+            rollCellObj.rt    = rtRoll;
+            m_rollsData.push_back(rollCellObj);
         }
     }
 }
 
-/*
-void GameLevelScene::initEnemyLyr()
-{
-    enemyLyr = CCLayer::create();
 
-    int elemNum = s_pGls->horizontalNum * s_pGls->verticalNum;
-    int initTag = elemNum * 2;
-    
-}
-
-void GameLevelScene::initPieceLyr()
-{
-    pieceLyr = CCLayer::create();
-
-    int elemNum = s_pGls->horizontalNum * s_pGls->verticalNum;
-    int initTag = elemNum * 3;
-    
-}
-
-*/
 
 void GameLevelScene::menuReturnCallback(CCObject* pSender)
 {
@@ -600,19 +603,300 @@ void GameLevelScene::menuReturnCallback(CCObject* pSender)
 void GameLevelScene::ccTouchesBegan(CCSet *pTouches, CCEvent *pEvent)
 {
     CCLog("File: %s, class: GameLevelScene, function: %s, line: %d\n", __FILE__,  __FUNCTION__, __LINE__);
+    m_lines.clear();
+    m_curPoints = 0;
     
+    CCTouch *pTouch = (CCTouch *)(*pTouches->begin());
+    CCPoint pos = pTouch->getLocation();
+    CCLog("touch position = (%f, %f)\n", pos.x, pos.y);
+
+    drawLine(pos);
 }
 void GameLevelScene::ccTouchesMoved(CCSet *pTouches, CCEvent *pEvent)
 {
-     CCLog("File: %s, class: GameLevelScene, function: %s, line: %d\n", __FILE__,  __FUNCTION__, __LINE__);
+    CCLog("File: %s, class: GameLevelScene, function: %s, line: %d\n", __FILE__,  __FUNCTION__, __LINE__);
     
+    CCTouch *pTouch = (CCTouch *)(*pTouches->begin());
+    CCPoint pos = pTouch->getLocation();
+    CCLog("touch position = (%f, %f)\n", pos.x, pos.y);
+
+    drawLine(pos);
+
+}
+
+void GameLevelScene::ccTouchesEnded(CCSet *pTouches, CCEvent *pEvent)
+{
+    CCLog("File: %s, class: GameLevelScene, function: %s, line: %d\n", __FILE__,  __FUNCTION__, __LINE__);
+    
+    CCTouch *pTouch = (CCTouch *)(*pTouches->begin());
+    CCPoint pos = pTouch->getLocation();
+    CCLog("touch position = (%f, %f)\n", pos.x, pos.y);
+
+    drawLine(pos);
+    
+    removeLinesObj();
+    UpdateAllCellsOfGrid(); //eliminate cell of line, and update cell by using m_lines and m_curPoints
+    
+    m_lines.clear();
+    m_preColor  = -1;
+    m_curPoints = 0;
+    
+}
+void GameLevelScene::ccTouchesCancelled(CCSet *pTouches, CCEvent *pEvent)
+{
+    CCLog("File: %s, class: GameLevelScene, function: %s, line: %d\n", __FILE__,  __FUNCTION__, __LINE__);
+    
+    CCTouch *pTouch = (CCTouch *)(*pTouches->begin());
+    CCPoint pos = pTouch->getLocation();
+    CCLog("touch position = (%f, %f)\n", pos.x, pos.y);
+    
+    //drawLine(pos);
+
+    
+}
+
+//eliminate cell of line, and update cell by using m_lines and m_curPoints
+void GameLevelScene::UpdateAllCellsOfGrid()
+{
+    int row = s_pGls->verticalNum;
+    int col = s_pGls->horizontalNum;
+    int step = 0;
+    
+    // 1. update roll and remove piece
+    // 2. update piece
+    
+    for (std::vector<CellDataOfGrid>::size_type i = 0; i < m_lines.size(); i++) {
+        
+        int tag = m_lines[i].index;
+        
+        // update roll
+        int type = m_rollsData[tag].type;
+        CCRect rtRoll;
+        
+        if (type == ROLL_TYPE_BLUE) {
+            // ROLL_TYPE_BLUE --> ROLL_TYPE_YELLOW
+            
+            rtRoll  = (CCRect)(rollDataMap.find(ROLL_TYPE_YELLOW)->second);
+
+            m_pSptBtNode->removeChild(m_pSptBtNode->getChildByTag(tag + ROLL_TAG_BASE * m_cellNum), true);
+            
+            CCSprite *pSptRoll = CCSprite::createWithTexture(m_pSptBtNode->getTexture(), rtRoll);
+            pSptRoll->setPosition(m_piecesData[tag].pt);
+            m_pSptBtNode->addChild(pSptRoll, 1, tag + ROLL_TAG_BASE * m_cellNum);
+            
+            m_rollsData[tag].type = ROLL_TYPE_YELLOW;
+
+            
+        } else if(type == ROLL_TYPE_DARK_BLUE) {
+            // ROLL_TYPE_DARK_BLUE --> ROLL_TYPE_BLUE
+            
+            rtRoll  = (CCRect)(rollDataMap.find(ROLL_TYPE_BLUE)->second);
+            
+            m_pSptBtNode->removeChild(m_pSptBtNode->getChildByTag(tag + ROLL_TAG_BASE * m_cellNum), true);
+            
+            CCSprite *pSptRoll = CCSprite::createWithTexture(m_pSptBtNode->getTexture(), rtRoll);
+            pSptRoll->setPosition(m_piecesData[tag].pt);
+            m_pSptBtNode->addChild(pSptRoll, 1, tag + ROLL_TAG_BASE * m_cellNum);
+            
+            m_rollsData[tag].type = ROLL_TYPE_BLUE;
+            
+        } else if(type == ROLL_TYPE_REVERSE_BLUE) {
+            // ROLL_TYPE_REVERSE_BLUE --> ROLL_TYPE_REVERSE_YELLOW
+            
+            rtRoll  = (CCRect)(rollDataMap.find(ROLL_TYPE_REVERSE_YELLOW)->second);
+            
+            m_pSptBtNode->removeChild(m_pSptBtNode->getChildByTag(tag + ROLL_TAG_BASE * m_cellNum), true);
+            
+            CCSprite *pSptRoll = CCSprite::createWithTexture(m_pSptBtNode->getTexture(), rtRoll);
+            pSptRoll->setPosition(m_piecesData[tag].pt);
+            m_pSptBtNode->addChild(pSptRoll, 1, tag + ROLL_TAG_BASE * m_cellNum);
+            
+            m_rollsData[tag].type = ROLL_TYPE_REVERSE_YELLOW;
+            
+        }else if(type == ROLL_TYPE_REVERSE_YELLOW) {
+            // ROLL_TYPE_REVERSE_YELLOW --> ROLL_TYPE_REVERSE_BLUE
+            
+            rtRoll  = (CCRect)(rollDataMap.find(ROLL_TYPE_REVERSE_BLUE)->second);
+            
+            m_pSptBtNode->removeChild(m_pSptBtNode->getChildByTag(tag + ROLL_TAG_BASE * m_cellNum), true);
+            
+            CCSprite *pSptRoll = CCSprite::createWithTexture(m_pSptBtNode->getTexture(), rtRoll);
+            pSptRoll->setPosition(m_piecesData[tag].pt);
+            m_pSptBtNode->addChild(pSptRoll, 1, tag + ROLL_TAG_BASE * m_cellNum);
+            
+            m_rollsData[tag].type = ROLL_TYPE_REVERSE_BLUE;
+            
+        }
+
+        // remove piece
+        m_pSptBtNode->removeChild(m_pSptBtNode->getChildByTag(tag + PIECE_TAG_BASE * m_cellNum), true);
+        
+    }
+    
+    //
+    // ... deal with dropping roll
+    
+    
+    
+}
+
+/////////////////////////////////////////
+// touch end, remove all lineobj: include bg and top
+/////////////////////////////////////////
+void  GameLevelScene::removeLinesObj()
+{
+    for (std::vector<CellDataOfGrid>::size_type i = 0; i < m_lines.size(); i++) {
+        this->removeChild(this->getChildByTag(i + 1 + LINE_BG_TAG_BASE  * m_cellNum));
+        this->removeChild(this->getChildByTag(i + 1 + LINE_TOP_TAG_BASE * m_cellNum));
+
+    }
+}
+
+/////////////////////////////////////////
+// procedure:
+//
+// 1. cell positon illegal and if show
+// 2. if color is same
+//  2.1 color isnot same, return
+//  2.2 color is same, draw line
+// 3. judge point number
+// 4. if current point is the same as previous point
+//
+/////////////////////////////////////////
+void GameLevelScene::drawLine(const CCPoint &pt)
+{
+    // -1 : illegal;  cellIndex --> [0, m_cellNum-1]
+    int cellIndex = getCellIndexByPosition(pt);
+    
+    // 1. the pos illegal or can't show
+    if (cellIndex == -1 || s_pGls->mapData[cellIndex] == 0) {
+        return ;
+    }
+    
+    int curColor = this->getColorTypeByPieceType(cellIndex);
+    
+    // current color is different from previous color, return
+    // 2.1 color is not same
+    if (m_preColor != -1 && m_preColor != curColor) {
+        return;
+    }
+    
+    CCPoint curPt   = m_piecesData[cellIndex].pt;
+    int     elemNum = m_lines.size();
+    
+    // 2.2 The same color or first point of drawing line
+    // 3. 判断是否为第一个点, 只有一个点不画线, only update data
+    if (elemNum > 0){
+        
+        CCPoint prePt  = m_lines[elemNum-1].pt;
+        
+        // 回退一格
+        if (elemNum >= 2) {
+            CCPoint pprePt = m_lines[elemNum - 2].pt;
+            if ((curPt.x == pprePt.x) && (curPt.y == pprePt.y)){
+                
+                this->removeChild(this->getChildByTag(elemNum - 1 + LINE_BG_TAG_BASE * m_cellNum));
+                this->removeChild(this->getChildByTag(elemNum - 1 + LINE_TOP_TAG_BASE * m_cellNum));
+                m_lines.pop_back();
+                m_curPoints--;
+                
+                return;
+            }
+        }
+        
+        // 4. if current point is the same as previous point
+        // 4.1 the same
+        if ((curPt.x == prePt.x) && (curPt.y == prePt.y)){
+            // 判断是否和前一个点相同
+            // same, return
+            return;
+        }else {
+            // 4.2 not same, draw lines
+            
+            LineData lineObj  = lineDataObj.find(m_preColor)->second;
+            
+            float rotation = this->getRotation(prePt, curPt);
+            
+            // bg sprite img
+            CCSprite *pBgSpt  = CCSprite::createWithTexture(m_pSptBtNode->getTexture(), lineObj.bg);
+            pBgSpt->setPosition((curPt + prePt)/2);
+            pBgSpt->setRotation(rotation);
+            this->addChild(pBgSpt, 5, elemNum + LINE_BG_TAG_BASE * m_cellNum);
+            
+            // top sprite img
+            CCSprite *pTopSpt = CCSprite::createWithTexture(m_pSptBtNode->getTexture(), lineObj.top);
+            pBgSpt->setPosition((curPt + prePt)/2);
+            pBgSpt->setRotation(rotation);
+            this->addChild(pTopSpt, 5, elemNum + LINE_TOP_TAG_BASE * m_cellNum);
+            
+        }
+        
+    }
+    
+    m_preColor = curColor;
+    m_lines.push_back(CellDataOfGrid(cellIndex, curPt));
+    m_curPoints++;
+    
+}
+
+float GameLevelScene::getRotation(CCPoint a, CCPoint b)const
+{
+    if(std::abs(a.x - b.x) < 10){
+        return 0;
+    }else if(a.x > b.x){
+        if(a.y < b.y){
+            return 120;
+        }else{
+            return 60;
+        }
+    }else{
+        if(a.y < b.y){
+            return 60;
+        }else{
+            return 120;
+        }
+    }
+    return 0;
+}
+
+int GameLevelScene::getColorTypeByPieceType(int pieceIndex)const
+{
+    
+    return (m_piecesData[pieceIndex].colorType);
+}
+
+int GameLevelScene::getCellIndexByPosition(const CCPoint &pt)const
+{
+    // return value: [0, m_cellNum]
+    int loc = -1;
+    //首先遍历列 找出x 的格子
+	//loc = cc.Director.getInstance().convertToGL(loc);
+	for (std::vector<PieceDataOfGrid>::size_type i = 0; i < m_piecesData.size(); i++) {
+        if (isPointInRange(pt, m_piecesData[i].pt, m_piecesData[i].rt)){
+            loc = i;
+            break;
+        }
+    }
+    
+    return (loc);
+    
+}
+
+bool GameLevelScene::isPointInRange(const CCPoint &pt, const CCPoint &mid, const CCRect &rt) const
+{
+    CCPoint begPt = CCPoint(mid.x - rt.size.width/2, mid.y - rt.size.height/2);
+    CCPoint endPt = CCPoint(mid.x + rt.size.width/2, mid.y + rt.size.height/2);
+    
+    if ((pt.x >= begPt.x && pt.x <= endPt.x) &&
+        (pt.y >= begPt.y && pt.y <= endPt.y)) {
+        return (true);
+    }
+    return (false);
 }
 
 void GameLevelScene::registerWithTouchDispatcher()
 {
      CCLog("File: %s, class: GameLevelScene, function: %s, line: %d\n", __FILE__,  __FUNCTION__, __LINE__);
-    
-    
 }
 
 

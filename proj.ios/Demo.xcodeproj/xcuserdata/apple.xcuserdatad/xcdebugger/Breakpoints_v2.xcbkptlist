@@ -434,7 +434,7 @@
       <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            shouldBeEnabled = "Yes"
+            shouldBeEnabled = "No"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../Classes/views/gameLevelScene.cpp"
@@ -470,13 +470,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../Classes/views/gameLevelScene.cpp"
-            timestampString = "417965647.44466"
+            timestampString = "418064234.72046"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "384"
-            endingLineNumber = "384"
-            landmarkName = "GameLevelScene::initGameElementCoordinate()"
-            landmarkType = "5">
+            startingLineNumber = "398"
+            endingLineNumber = "398">
          </BreakpointContent>
       </BreakpointProxy>
       <BreakpointProxy
@@ -486,11 +484,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../Classes/views/gameLevelScene.cpp"
-            timestampString = "417965647.44466"
+            timestampString = "418064234.72046"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "517"
-            endingLineNumber = "517"
+            startingLineNumber = "531"
+            endingLineNumber = "531"
             landmarkName = "GameLevelScene::initUI()"
             landmarkType = "5">
          </BreakpointContent>
@@ -548,11 +546,11 @@
             ignoreCount = "0"
             continueAfterRunningActions = "No"
             filePath = "../Classes/views/gameLevelScene.cpp"
-            timestampString = "417967427.897005"
+            timestampString = "418064234.72046"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "417"
-            endingLineNumber = "417"
+            startingLineNumber = "431"
+            endingLineNumber = "431"
             landmarkName = "GameLevelScene::init()"
             landmarkType = "5">
          </BreakpointContent>

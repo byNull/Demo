@@ -115,6 +115,38 @@ public:
 };
 
 
+// struct type
+struct CellDataOfGrid{
+    CellDataOfGrid(int idx, CCPoint tpt = CCPointZero) : index(idx), pt(tpt) { }
+    
+    int     index; // index --> [0, m_cellNum)
+    CCPoint pt;
+};
+
+struct RollDataOfGrid{
+    int     index;
+    int     type;
+    CCPoint pt;
+    CCRect  rt;
+};
+
+enum RollType{
+    ROLL_TYPE_YELLOW = 0,
+    ROLL_TYPE_BLUE   = 1000,
+    ROLL_TYPE_DARK_BLUE = 1010,
+    ROLL_TYPE_REVERSE_BLUE = 1020,
+    ROLL_TYPE_REVERSE_YELLOW  = 1030,
+    
+};
+
+struct PieceDataOfGrid{
+    int     valueOfPos;
+    int     colorType;
+    CCPoint pt;
+    CCRect  rt;
+    int     index;
+};
+
 class GameLevelScene : public CCLayer
 {
 public:
@@ -125,10 +157,20 @@ public:
     // Here's a difference. Method 'init' in cocos2d-x returns bool, instead of returning 'id' in cocos2d-iphone
     virtual bool init();
     
-    void initConfigWithGameLevel(int lev);
+    void  initConfigWithGameLevel(int lev);
     
-    void setLevel(int lev){ m_level = lev;}
-    int  getLevel() const { return (m_level);}
+    void  setLevel(int lev){ m_level = lev;}
+    int   getLevel() const { return (m_level);}
+    
+    void  removeLinesObj(); //消除方格时移除线对象
+    void  UpdateAllCellsOfGrid();
+    void  drawLine(const CCPoint &pt);
+    int   getCellIndexByPosition(const CCPoint &pt)const;
+    int   getColorTypeByPieceType(int pieceIndex)const;
+    float getRotation(CCPoint a, CCPoint b)const;
+    bool  isPointInRange(const CCPoint &pt, const CCPoint &mid, const CCRect &rt) const;
+
+    
     
     
     // there's no 'id' in cpp, so we recommend returning the class instance pointer
@@ -136,6 +178,9 @@ public:
     
     virtual void ccTouchesBegan(CCSet *pTouches, CCEvent *pEvent);
     virtual void ccTouchesMoved(CCSet *pTouches, CCEvent *pEvent);
+    virtual void ccTouchesEnded(CCSet *pTouches, CCEvent *pEvent);
+    virtual void ccTouchesCancelled(CCSet *pTouches, CCEvent *pEvent);
+    
     
     virtual void registerWithTouchDispatcher();
     
@@ -148,15 +193,20 @@ public:
 protected:
     //void goGameLevel(int level);
     
-    virtual void initMapLyr();
+//    virtual void initMapLyr();
     virtual void initUI();
-    virtual void initEnemyLyr();
-    virtual void initPieceLyr();
+//    virtual void initEnemyLyr();
+//    virtual void initPieceLyr();
     
     void initGameElementCoordinate();
     
     
 protected:
+    
+    std::vector<CellDataOfGrid>  m_lines;
+    std::map<int, CCPoint>       m_GridPos;
+    std::vector<PieceDataOfGrid> m_piecesData;
+    std::vector<RollDataOfGrid>  m_rollsData;
     
     CCPoint m_tBeginPos;
     
@@ -174,6 +224,8 @@ protected:
     
     int     m_level;  // locate certain level
     int     m_cellNum;
+    int     m_preColor; // 0, 1, 2, 3
+    int     m_curPoints;
     
     CCSpriteBatchNode *m_pSptBtNode;
     
@@ -181,10 +233,12 @@ protected:
     float topStart;
     
     
-    int MAP_TAG_BASE;  // 0
-    int ROLL_TAG_BASE; // 1
-    int ENEMY_TAG_BASE;// 2
-    int PIECE_TAG_BASE;// 3
+    int MAP_TAG_BASE;     // 0
+    int ROLL_TAG_BASE;    // 1
+    int ENEMY_TAG_BASE;   // 2
+    int PIECE_TAG_BASE;   // 3
+    int LINE_BG_TAG_BASE; // 4
+    int LINE_TOP_TAG_BASE;// 5
     
 public:
     //顶部不可覆盖区域高度
@@ -201,9 +255,6 @@ public:
 	static int CELL_HEIGHT      ;
     
 	static int CELL_TOUCH_LENGTH;
-
-
-    
     
 };
 
